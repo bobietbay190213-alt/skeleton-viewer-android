@@ -4,27 +4,66 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Head: circle at cx=54 cy=32 r=7, drawn as two arcs -->
     <path
         android:fillColor="#00FF41"
-        android:pathData="M54,20 C54,20 54,20 54,20
-            M54,20 L54,20
-            M54,26 C50.686,26 48,28.686 48,32 C48,35.314 50.686,38 54,38 C57.314,38 60,35.314 60,32 C60,28.686 57.314,26 54,26 Z
-            M54,38 L54,58
-            M40,45 L68,45
-            M40,45 L30,60
-            M68,45 L78,60
-            M54,58 L46,74
-            M54,58 L62,74
-            M46,74 L42,88
-            M62,74 L66,88"/>
-    <circle
-        android:fillColor="#00FF41"
-        android:cx="54"
-        android:cy="32"
-        android:r="7"/>
-    <line
+        android:pathData="M54,25 A7,7 0 1,1 53.999,25 Z"/>
+
+    <!-- Body -->
+    <path
         android:strokeColor="#00FF41"
         android:strokeWidth="3"
-        android:x1="54" android:y1="39"
-        android:x2="54" android:y2="58"/>
+        android:fillColor="@android:color/transparent"
+        android:pathData="M54,39 L54,58"/>
+
+    <!-- Arms -->
+    <path
+        android:strokeColor="#00FF41"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M40,45 L68,45"/>
+
+    <!-- Left arm extension -->
+    <path
+        android:strokeColor="#00FF41"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M40,45 L30,60"/>
+
+    <!-- Right arm extension -->
+    <path
+        android:strokeColor="#00FF41"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M68,45 L78,60"/>
+
+    <!-- Left leg upper -->
+    <path
+        android:strokeColor="#00FF41"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M54,58 L46,74"/>
+
+    <!-- Right leg upper -->
+    <path
+        android:strokeColor="#00FF41"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M54,58 L62,74"/>
+
+    <!-- Left leg lower -->
+    <path
+        android:strokeColor="#00FF41"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M46,74 L42,88"/>
+
+    <!-- Right leg lower -->
+    <path
+        android:strokeColor="#00FF41"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M62,74 L66,88"/>
+
 </vector>
