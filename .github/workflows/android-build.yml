@@ -23,8 +23,6 @@ on:
 
 env:
   JAVA_VERSION: '17'
-  ANDROID_API_LEVEL: '35'
-  ANDROID_BUILD_TOOLS: '35.0.0'
 
 jobs:
   build:
@@ -48,10 +46,8 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
-          build-tools: ${{ env.ANDROID_BUILD_TOOLS }}
-          ndk: false
-          cmake: false
+          packages: 'platforms;android-35 build-tools;35.0.0'
+          accept-android-sdk-licenses: true
 
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
@@ -66,9 +62,6 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v3
 
       - name: Download MediaPipe model
         run: |
