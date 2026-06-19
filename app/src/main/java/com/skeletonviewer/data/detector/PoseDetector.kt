@@ -8,7 +8,6 @@ import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
-import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerOptions
 import com.skeletonviewer.domain.models.PoseLandmarkModel
 import com.skeletonviewer.domain.models.PoseResultModel
 import com.skeletonviewer.domain.models.SkeletonConfig
@@ -36,7 +35,7 @@ class PoseDetector @Inject constructor(
                 .setDelegate(Delegate.GPU)
                 .build()
 
-            val options = PoseLandmarkerOptions.builder()
+            val options = PoseLandmarker.PoseLandmarkerOptions.builder()
                 .setBaseOptions(baseOptions)
                 .setMinPoseDetectionConfidence(currentConfig.detectionConfidence)
                 .setMinTrackingConfidence(currentConfig.trackingConfidence)
@@ -55,7 +54,7 @@ class PoseDetector @Inject constructor(
                     .setDelegate(Delegate.CPU)
                     .build()
 
-                val options = PoseLandmarkerOptions.builder()
+                val options = PoseLandmarker.PoseLandmarkerOptions.builder()
                     .setBaseOptions(baseOptionsCpu)
                     .setMinPoseDetectionConfidence(currentConfig.detectionConfidence)
                     .setMinTrackingConfidence(currentConfig.trackingConfidence)
