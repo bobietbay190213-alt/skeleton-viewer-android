@@ -1,0 +1,188 @@
+name: Android CI — Build & Release APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type (debug or release)'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - debug
+          - release
+
+env:
+  JAVA_VERSION: '17'
+  ANDROID_API_LEVEL: '35'
+  ANDROID_BUILD_TOOLS: '35.0.0'
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: ${{ env.ANDROID_API_LEVEL }}
+          build-tools: ${{ env.ANDROID_BUILD_TOOLS }}
+          ndk: false
+          cmake: false
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.android/build-cache
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', '**/gradle/libs.versions.toml', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v3
+
+      - name: Download MediaPipe model
+        run: |
+          mkdir -p app/src/main/assets
+          wget -q "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task" \
+            -O app/src/main/assets/pose_landmarker_full.task
+          echo "MediaPipe model downloaded: $(du -sh app/src/main/assets/pose_landmarker_full.task)"
+
+      - name: Run Unit Tests
+        run: ./gradlew test --no-daemon --stacktrace
+        continue-on-error: true
+
+      - name: Determine build type
+        id: build-type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "type=${{ inputs.build_type }}" >> $GITHUB_OUTPUT
+          else
+            echo "type=release" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build Release APK
+        if: steps.build-type.outputs.type == 'release'
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Build Debug APK
+        if: steps.build-type.outputs.type == 'debug'
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: List generated APKs
+        run: find app/build/outputs/apk -name "*.apk" -exec ls -lh {} \;
+
+      - name: Upload Release APK Artifact
+        if: steps.build-type.outputs.type == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkeletonViewer-Release-APK
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload Debug APK Artifact
+        if: steps.build-type.outputs.type == 'debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkeletonViewer-Debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: app/build/reports/tests/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SkeletonViewer-Release-APK
+          path: apk/
+
+      - name: Get version from build.gradle.kts
+        id: version
+        run: |
+          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*versionName = "\(.*\)".*/\1/')
+          VERSION_CODE=$(grep 'versionCode' app/build.gradle.kts | head -1 | sed 's/.*versionCode = \([0-9]*\).*/\1/')
+          echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}-${{ github.run_number }}
+          name: Skeleton Viewer v${{ steps.version.outputs.name }} (Build ${{ github.run_number }})
+          body: |
+            ## Skeleton Viewer APK — v${{ steps.version.outputs.name }}
+
+            ### What's included
+            - Real-time pose detection using MediaPipe Pose Landmarker
+            - Skeleton overlay with 33 body landmarks
+            - Front/back camera switching
+            - Capture photos with skeleton overlay
+            - Customizable skeleton colors, line width, landmark size
+            - FPS counter display
+
+            ### Installation
+            1. Download `app-release.apk` below
+            2. Enable "Install from unknown sources" on your Android device
+            3. Open the APK file to install
+
+            ### Requirements
+            - Android 8.0+ (API 26+)
+            - Camera permission required
+
+            ---
+            Build: ${{ github.run_number }} | Commit: ${{ github.sha }}
+          files: apk/*.apk
+          draft: false
+          prerelease: false
