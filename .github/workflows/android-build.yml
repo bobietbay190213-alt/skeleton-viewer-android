@@ -23,6 +23,7 @@ on:
 
 env:
   JAVA_VERSION: '17'
+  GRADLE_VERSION: '8.9'
 
 jobs:
   build:
@@ -41,13 +42,18 @@ jobs:
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
-          cache: 'gradle'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-35 build-tools;35.0.0'
           accept-android-sdk-licenses: true
+
+      - name: Setup Gradle ${{ env.GRADLE_VERSION }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+          cache-read-only: false
 
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
@@ -71,7 +77,7 @@ jobs:
           echo "MediaPipe model downloaded: $(du -sh app/src/main/assets/pose_landmarker_full.task)"
 
       - name: Run Unit Tests
-        run: ./gradlew test --no-daemon --stacktrace
+        run: gradle test --no-daemon --stacktrace
         continue-on-error: true
 
       - name: Determine build type
@@ -85,11 +91,11 @@ jobs:
 
       - name: Build Release APK
         if: steps.build-type.outputs.type == 'release'
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Build Debug APK
         if: steps.build-type.outputs.type == 'debug'
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: List generated APKs
         run: find app/build/outputs/apk -name "*.apk" -exec ls -lh {} \;
@@ -144,9 +150,7 @@ jobs:
         id: version
         run: |
           VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*versionName = "\(.*\)".*/\1/')
-          VERSION_CODE=$(grep 'versionCode' app/build.gradle.kts | head -1 | sed 's/.*versionCode = \([0-9]*\).*/\1/')
           echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "code=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION_NAME" >> $GITHUB_OUTPUT
 
       - name: Create Release
