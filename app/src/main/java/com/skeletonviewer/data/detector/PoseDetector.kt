@@ -23,6 +23,10 @@ class PoseDetector @Inject constructor(
     private var currentConfig: SkeletonConfig = SkeletonConfig()
     private var isInitialized = false
 
+    init {
+        setupPoseLandmarker()
+    }
+
     fun initialize(config: SkeletonConfig = SkeletonConfig()) {
         currentConfig = config
         setupPoseLandmarker()
